@@ -1,0 +1,56 @@
+import asyncio
+import json
+import os
+from urllib.parse import urlparse, urljoin
+import pandas as pd
+from crowd_sdk.tagme import TagmeClientAdvanced
+
+def read_excel():
+    data_folder = 'data'
+
+    files = [filename for filename in os.listdir(data_folder) if filename.endswith('.xlsx')]
+
+    if not files:
+        print('Ошибка: в папке "data" отсутствуют файлы Excel (.xlsx)')
+        return None
+
+    print('Доступные файлы Excel для обработки:')
+    for i, filename in enumerate(files, 1):
+        print(f"{i}. {filename}")
+
+    try:
+        choice = int(input("Выберите номер файла для чтения: "))
+        selected_file = files[choice - 1]
+        file_path = os.path.join(data_folder, selected_file)
+
+        data = pd.read_excel(file_path)
+
+        os.makedirs('out', exist_ok=True)
+        i = 1
+        for index, row in data.iterrows():
+            question = row['INPUT:question']
+            answers = [ans.strip() for ans in str(row['INPUT:answers']).split('ДОКУМЕНТ') if ans]
+            entry = {"question": question, "answers": answers}
+
+            # json_file_path = os.path.splitext(file_path)[0] + '.json'
+            json_file_path = os.path.join('out', f'{i}.json')
+            i += 1
+            with open(json_file_path, 'w', encoding='utf-8') as json_file:
+                json.dump(entry, json_file, ensure_ascii=False, indent=4)
+
+            print(f"JSON файл успешно создан: {json_file_path}")
+        return entry
+
+    except (ValueError, IndexError):
+        print("Ошибка: Некорректный выбор файла")
+        return None
+
+def main():
+    entry = read_excel()
+    if entry is not None:
+        print('Обработка завершена')
+    else:
+        print('Ошибка при обработке файла')
+
+if __name__== "__main__":
+    main()
